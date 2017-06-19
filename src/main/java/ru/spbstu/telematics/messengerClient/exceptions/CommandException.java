@@ -1,4 +1,4 @@
-package ru.spbstu.telematics.messangerClient.exceptions;
+package ru.spbstu.telematics.messengerClient.exceptions;
 
 /**
  * Created by ihb on 13.06.17.

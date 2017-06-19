@@ -1,10 +1,12 @@
-package ru.spbstu.telematics.messangerClient.network;
+package ru.spbstu.telematics.messengerClient.network;
 
 
-import ru.spbstu.telematics.messangerClient.exceptions.ProtocolException;
-import ru.spbstu.telematics.messangerClient.logic.CommandHandler;
-import ru.spbstu.telematics.messangerClient.messages.Message;
-import ru.spbstu.telematics.messangerClient.store.User;
+import lombok.Getter;
+import lombok.Setter;
+import ru.spbstu.telematics.messengerClient.data.storage.models.messages.Message;
+import ru.spbstu.telematics.messengerClient.exceptions.ProtocolException;
+import ru.spbstu.telematics.messengerClient.logic.CommandHandler;
+import ru.spbstu.telematics.messengerClient.store.User;
 
 import java.io.IOException;
 import java.net.Socket;
@@ -15,6 +17,9 @@ import java.nio.ByteBuffer;
  * Бизнес логика представлена объектом юзера - владельца сессии.
  * Сетевая часть привязывает нас к определнному соединению по сети (от клиента)
  */
+
+@Setter
+@Getter
 public class Session {
 
     /**
@@ -31,11 +36,16 @@ public class Session {
     }
 
     public boolean isLoggedIn(){
-        return user != null;
+        return user != null && !"".equals(user.getToken());
     }
 
     public void send(Message message){
         // TODO: 17.06.17 fix me
+
+        if (isLoggedIn()) {
+            message.setSenderId(user.getId());
+            message.setToken(user.getToken());
+        }
         ByteBuffer buffer = null;
         try {
             buffer = ByteBuffer.wrap(new StringProtocol().encode(message));
@@ -54,7 +64,16 @@ public class Session {
         switch (message.getType()){
             case MSG_STATUS:
                 CommandHandler.status(this, message);
+                break;
+            case MSG_INFO_RESULT:
+                CommandHandler.infoResult(this, message);
+                break;
+
         }
+    }
+
+    public void logout() {
+        user = null;
     }
 
     public void close() {

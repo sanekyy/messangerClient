@@ -1,4 +1,4 @@
-package ru.spbstu.telematics.messangerClient.messages;
+package ru.spbstu.telematics.messengerClient.data.storage.models.messages;
 
 import lombok.Getter;
 import lombok.Setter;
@@ -13,7 +13,7 @@ import java.util.Objects;
 @Getter
 public class TextMessage extends Message {
 
-    private String text;
+    String text;
 
 
     public TextMessage(String text) {

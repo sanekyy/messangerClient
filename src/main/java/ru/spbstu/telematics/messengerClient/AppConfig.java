@@ -1,4 +1,4 @@
-package ru.spbstu.telematics.messangerClient;
+package ru.spbstu.telematics.messengerClient;
 
 /**
  * Created by ihb on 13.06.17.

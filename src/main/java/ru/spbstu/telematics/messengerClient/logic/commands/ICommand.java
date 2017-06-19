@@ -1,9 +1,9 @@
-package ru.spbstu.telematics.messangerClient.logic.commands;
+package ru.spbstu.telematics.messengerClient.logic.commands;
 
 
-import ru.spbstu.telematics.messangerClient.exceptions.CommandException;
-import ru.spbstu.telematics.messangerClient.messages.Message;
-import ru.spbstu.telematics.messangerClient.network.Session;
+import ru.spbstu.telematics.messengerClient.data.storage.models.messages.Message;
+import ru.spbstu.telematics.messengerClient.exceptions.CommandException;
+import ru.spbstu.telematics.messengerClient.network.Session;
 
 /**
  * Created by ihb on 13.06.17.

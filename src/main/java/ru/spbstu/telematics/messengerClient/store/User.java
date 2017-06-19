@@ -1,4 +1,4 @@
-package ru.spbstu.telematics.messangerClient.store;
+package ru.spbstu.telematics.messengerClient.store;
 
 import lombok.Getter;
 import lombok.Setter;

@@ -1,13 +1,10 @@
-package ru.spbstu.telematics.messangerClient;
+package ru.spbstu.telematics.messengerClient;
 
-import ru.spbstu.telematics.messangerClient.exceptions.ProtocolException;
-import ru.spbstu.telematics.messangerClient.messages.LoginMessage;
-import ru.spbstu.telematics.messangerClient.messages.Message;
-import ru.spbstu.telematics.messangerClient.messages.TextMessage;
-import ru.spbstu.telematics.messangerClient.messages.Type;
-import ru.spbstu.telematics.messangerClient.network.IProtocol;
-import ru.spbstu.telematics.messangerClient.network.Session;
-import ru.spbstu.telematics.messangerClient.network.StringProtocol;
+import ru.spbstu.telematics.messengerClient.data.storage.models.messages.*;
+import ru.spbstu.telematics.messengerClient.exceptions.ProtocolException;
+import ru.spbstu.telematics.messengerClient.network.IProtocol;
+import ru.spbstu.telematics.messengerClient.network.Session;
+import ru.spbstu.telematics.messengerClient.network.StringProtocol;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -36,7 +33,7 @@ public class Main {
             Scanner scanner = new Scanner(System.in);
             System.out.println("$");
             while (true) {
-                String input = scanner.nextLine();
+                String input = scanner.nextLine().trim();
                 if ("q".equals(input)) {
                     return;
                 }
@@ -75,6 +72,8 @@ public class Main {
                     System.err.println("Failed to process connection: " + e);
                     e.printStackTrace();
                     Thread.currentThread().interrupt();
+                } finally {
+                    buffer.clear();
                 }
             }
         });
@@ -92,33 +91,92 @@ public class Main {
      */
     private static void processInput(String rawData) throws IOException, ProtocolException {
 
+        String[] tokens;
+        Message message;
+
         Pattern groupIdPattern = Pattern.compile(" |$");
         Matcher matcher = groupIdPattern.matcher(rawData);
 
         if(!matcher.find()){
-            throw new ProtocolException("Delimiter doesn't found");
+            throw new ProtocolException("Delimiter doesn't found.");
         }
 
         int startPos = matcher.start();
 
         String command = rawData.substring(0,startPos);
-        rawData = rawData.substring(startPos+1);
 
         switch (command) {
-            case "/login":
-                String[] tokens = rawData.split(" ");
-                if(tokens.length != 2){
-                    System.out.println("Parameters Error");
+            case "/registration":
+                if (session.isLoggedIn()) {
+                    System.out.println("You are logged in. Please logout to register.");
                     return;
                 }
 
-                Message message = new LoginMessage(tokens[0], tokens[1]);
+                rawData = rawData.substring(startPos + 1);
+                tokens = rawData.split(" ");
+                if (tokens.length != 2) {
+                    System.out.println("Parameters Error.");
+                    return;
+                }
+
+                message = new RegistrationMessage(tokens[0], tokens[1]);
+                session.send(message);
+                break;
+            case "/login":
+                if (session.isLoggedIn()) {
+                    System.out.println("Already logged in.");
+                    return;
+                }
+
+                rawData = rawData.substring(startPos + 1);
+                tokens = rawData.split(" ");
+                if(tokens.length != 2){
+                    System.out.println("Parameters Error.");
+                    return;
+                }
+
+                message = new LoginMessage(tokens[0], tokens[1]);
+                session.send(message);
+                break;
+            case "/logout":
+                if (!session.isLoggedIn()) {
+                    System.out.println("Already logouted.");
+                    return;
+                }
+                session.logout();
+                System.out.println("Logout success");
+                break;
+            case "/info":
+                if (!session.isLoggedIn()) {
+                    System.out.println("Error, you are not logged in. Please login or register.");
+                    return;
+                }
+
+                if (rawData.length() > "/info".length()) {
+                    rawData = rawData.substring(startPos + 1);
+                    tokens = rawData.split(" ");
+                    if (tokens.length != 1) {
+                        System.out.println("Parameters Error.");
+                        return;
+                    }
+
+                    message = new InfoMessage(Long.valueOf(tokens[0]));
+                } else {
+                    message = new InfoMessage(session.getUser().getId());
+                }
                 session.send(message);
                 break;
             case "/help":
-                // TODO: реализация
+                Utils.printHelp();
                 break;
             case "/text":
+                if (!session.isLoggedIn()) {
+                    System.out.println("Error, you are not logged in. Please login or register.");
+                    return;
+                }
+
+                rawData = rawData.substring(startPos + 1);
+
                 session.send(new TextMessage(rawData));
                 break;
             default:
