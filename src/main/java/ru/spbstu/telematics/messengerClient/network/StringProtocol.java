@@ -3,11 +3,8 @@ package ru.spbstu.telematics.messengerClient.network;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
-import ru.spbstu.telematics.messengerClient.data.storage.models.messages.InfoResultMessage;
-import ru.spbstu.telematics.messengerClient.data.storage.models.messages.Message;
+import ru.spbstu.telematics.messengerClient.data.storage.models.messages.*;
 import ru.spbstu.telematics.messengerClient.data.storage.models.messages.Message.Type;
-import ru.spbstu.telematics.messengerClient.data.storage.models.messages.StatusMessage;
-import ru.spbstu.telematics.messengerClient.data.storage.models.messages.TextMessage;
 import ru.spbstu.telematics.messengerClient.exceptions.ProtocolException;
 
 import java.util.regex.Matcher;
@@ -46,6 +43,12 @@ public class StringProtocol implements IProtocol {
             case MSG_INFO_RESULT:
                 return new Gson().fromJson(rawData, new TypeToken<InfoResultMessage>() {
                 }.getType());
+            case MSG_CHAT_LIST_RESULT:
+                return new Gson().fromJson(rawData, new TypeToken<ChatListResultMessage>() {
+                }.getType());
+            case MSG_CHAT_HIST_RESULT:
+                return new Gson().fromJson(rawData, new TypeToken<ChatHistResultMessage>() {
+                }.getType());
             default:
                 throw new ProtocolException("Invalid type: " + type);
         }
@@ -59,9 +62,12 @@ public class StringProtocol implements IProtocol {
         switch (type) {
             case MSG_REGISTRATION:
             case MSG_LOGIN:
-            case MSG_TEXT:
             case MSG_STATUS:
             case MSG_INFO:
+            case MSG_CHAT_LIST:
+            case MSG_CHAT_CREATE:
+            case MSG_CHAT_HIST:
+            case MSG_TEXT:
                 builder.append(new Gson().toJson(message));
                 break;
             default:

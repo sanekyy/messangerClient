@@ -46,6 +46,7 @@ public class Session {
             message.setSenderId(user.getId());
             message.setToken(user.getToken());
         }
+
         ByteBuffer buffer = null;
         try {
             buffer = ByteBuffer.wrap(new StringProtocol().encode(message));
@@ -62,13 +63,21 @@ public class Session {
 
     public void onMessage(Message message) {
         switch (message.getType()){
+            case MSG_TEXT:
+                CommandHandler.text(this, message);
+                break;
             case MSG_STATUS:
                 CommandHandler.status(this, message);
                 break;
             case MSG_INFO_RESULT:
                 CommandHandler.infoResult(this, message);
                 break;
-
+            case MSG_CHAT_LIST_RESULT:
+                CommandHandler.chatListResult(this, message);
+                break;
+            case MSG_CHAT_HIST_RESULT:
+                CommandHandler.chatHistResult(this, message);
+                break;
         }
     }
 

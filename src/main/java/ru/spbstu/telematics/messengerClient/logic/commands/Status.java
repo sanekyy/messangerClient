@@ -14,7 +14,9 @@ public class Status implements ICommand {
 
         StatusMessage statusMessage = (StatusMessage) message;
 
-        session.setUser(statusMessage.getUser());
+        if (statusMessage.getUser() != null) {
+            session.setUser(statusMessage.getUser());
+        }
 
         switch (statusMessage.getStatusCode()) {
             case StatusMessage.LOGIN_SUCCESS:
@@ -24,11 +26,23 @@ public class Status implements ICommand {
             case StatusMessage.REGISTRATION_SUCCESS:
                 System.out.println("Registration success");
                 break;
-            case StatusMessage.REGISTRATION_ERROR:
-                System.out.println("Registration failed, login is busy");
+            case StatusMessage.CHAT_CREATE_SUCCESS:
+                System.out.println("Chat successfully created");
+                break;
+            case StatusMessage.TEXT_MESSAGE_SUCCESS:
+                System.out.println("Message successfully sent");
                 break;
             case StatusMessage.LOGIN_ERROR:
                 System.out.println("Login error");
+                break;
+            case StatusMessage.REGISTRATION_ERROR:
+                System.out.println("Registration failed, login is busy");
+                break;
+            case StatusMessage.CHAT_CREATE_ERROR:
+                System.out.println("Chat creation failed");
+            case StatusMessage.TEXT_MESSAGE_ERROR:
+                // TODO: 21.06.17 make more state
+                System.out.println("TEXT MESSAGE ERROR");
                 break;
 
             default:

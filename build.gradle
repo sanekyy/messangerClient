@@ -2,11 +2,20 @@ group 'ru.spbstu.telematics.messengerClient'
 version '1.0-SNAPSHOT'
 
 apply plugin: 'java'
+apply plugin: 'application'
+
+mainClassName = 'ru.spbstu.telematics.messengerClient.Main'
+
 
 sourceCompatibility = 1.8
 
 repositories {
     mavenCentral()
+}
+
+jar {
+    baseName = 'gs-gradle'
+    version =  '0.1.0'
 }
 
 dependencies {

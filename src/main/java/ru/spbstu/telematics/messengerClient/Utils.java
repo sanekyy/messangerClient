@@ -6,6 +6,8 @@ package ru.spbstu.telematics.messengerClient;
 public class Utils {
 
     public static void printHelp() {
+        // TODO: 20.06.17 separate on independent function
+
         System.out.println("/registration [login] [password] \n" +
                 "Registration you on server. If login is busy you'll get error. \n" +
                 "Example: /registration sanekyy supersecret123");

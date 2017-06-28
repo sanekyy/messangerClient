@@ -13,12 +13,17 @@ import java.util.Objects;
 @Getter
 public class TextMessage extends Message {
 
+    Long chatId;
+
     String text;
 
+    Long timestamp = System.currentTimeMillis();
 
-    public TextMessage(String text) {
+
+    public TextMessage(Long chatId, String text) {
         setType(Type.MSG_TEXT);
 
+        this.chatId = chatId;
         this.text = text;
     }
 
