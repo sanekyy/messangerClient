@@ -136,6 +136,11 @@ public class Main {
                     return;
                 }
 
+                if ("/registration".equals(rawData)) {
+                    System.out.println("Parameters Error.");
+                    return;
+                }
+
                 rawData = rawData.substring(startPos + 1);
                 tokens = rawData.split(" ");
                 if (tokens.length != 2) {

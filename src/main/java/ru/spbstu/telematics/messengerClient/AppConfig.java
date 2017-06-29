@@ -5,7 +5,7 @@ package ru.spbstu.telematics.messengerClient;
  */
 public class AppConfig {
 
-    public static final int PORT = 8080;
+    public static final int PORT = 80;
     public static final String HOST = "localhost";
 
     public static final int BUFFER_SIZE = 1024 * 64;

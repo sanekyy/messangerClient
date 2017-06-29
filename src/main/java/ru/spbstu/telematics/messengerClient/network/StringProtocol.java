@@ -20,7 +20,7 @@ public class StringProtocol implements IProtocol {
     @Override
     public Message decode(byte[] bytes) throws ProtocolException {
         String rawData = new String(bytes).trim();
-        System.out.println("decoded: " + rawData);
+        System.out.println("RECEIVE: \n" + rawData + "\n");
 
         Pattern groupIdPattern = Pattern.compile(DELIMITER);
         Matcher matcher = groupIdPattern.matcher(rawData);
@@ -75,7 +75,7 @@ public class StringProtocol implements IProtocol {
 
 
         }
-        System.out.println("encoded: " + builder);
+        System.out.println("SEND: \n" + builder + "\n");
         return builder.toString().getBytes();
     }
 
