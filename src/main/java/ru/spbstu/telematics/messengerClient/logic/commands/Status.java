@@ -40,6 +40,10 @@ public class Status implements ICommand {
                 break;
             case StatusMessage.CHAT_CREATE_ERROR:
                 System.out.println("Chat creation failed");
+                break;
+            case StatusMessage.USER_NOT_EXIST_ERROR:
+                System.out.println("User doesn't exist");
+                break;
             case StatusMessage.TEXT_MESSAGE_ERROR:
                 // TODO: 21.06.17 make more state
                 System.out.println("TEXT MESSAGE ERROR");

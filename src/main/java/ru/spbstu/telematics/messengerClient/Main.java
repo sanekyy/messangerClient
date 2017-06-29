@@ -31,6 +31,7 @@ public class Main {
         try {
             initSocket();
 
+
             // Цикл чтения с консоли
             Scanner scanner = new Scanner(System.in);
             System.out.println("$");
@@ -52,16 +53,30 @@ public class Main {
         }
     }
 
-    private static void initSocket() throws IOException {
+    private static void initSocket() {
         InetSocketAddress address = new InetSocketAddress(AppConfig.HOST, AppConfig.PORT);
-        SocketChannel socketChannel = SocketChannel.open(address);
+        SocketChannel socketChannel;
+        try {
+            socketChannel = SocketChannel.open(address);
+        } catch (IOException e) {
+            if (e.toString().contains("Connection refused")) {
+                System.out.println("Connection refused, to try reconnect enter /reconnect");
+            } else {
+                e.printStackTrace();
+            }
+            return;
+        }
+
+        while (socketChannel.isConnectionPending()) ;
+
+        if (socketChannel.isConnected()) {
+            System.out.println("Connection established");
+        }
 
         session = new Session(socketChannel.socket());
 
         Thread socketListenerThread = new Thread(() -> {
             ByteBuffer buffer = ByteBuffer.allocate(AppConfig.BUFFER_SIZE);
-
-            System.out.println("Starting listener thread...");
 
             while (!Thread.currentThread().isInterrupted()) {
                 try {
@@ -69,6 +84,9 @@ public class Main {
                     if (read > 0) {
                         Message message = protocol.decode(Arrays.copyOf(buffer.array(), read));
                         session.onMessage(message);
+                    } else if (read == -1) {
+                        System.out.println("Connection lost, to try reconnect enter /reconnect");
+                        return;
                     }
                 } catch (Exception e) {
                     System.err.println("Failed to process connection: " + e);
@@ -94,6 +112,7 @@ public class Main {
     private static void processInput(String rawData) throws IOException, ProtocolException {
 
         String[] tokens;
+        Long chatId;
         Message message;
 
         Pattern groupIdPattern = Pattern.compile(" |$");
@@ -108,6 +127,9 @@ public class Main {
         String command = rawData.substring(0,startPos);
 
         switch (command) {
+            case "/reconnect":
+                initSocket();
+                break;
             case "/registration":
                 if (session.isLoggedIn()) {
                     System.out.println("You are logged in. Please logout to register.");
@@ -162,7 +184,16 @@ public class Main {
                         return;
                     }
 
-                    message = new InfoMessage(Long.valueOf(tokens[0]));
+                    Long userId;
+
+                    try {
+                        userId = Long.valueOf(tokens[0]);
+                    } catch (NumberFormatException e) {
+                        System.out.println("Parameters Error.");
+                        return;
+                    }
+
+                    message = new InfoMessage(userId);
                 } else {
                     message = new InfoMessage(session.getUser().getId());
                 }
@@ -197,8 +228,19 @@ public class Main {
                 rawData = rawData.substring(startPos + 1);
                 tokens = rawData.split(" ");
 
-                List<Long> participants = Arrays.stream(tokens).map(Long::valueOf).collect(Collectors.toList());
+                List<Long> participants;
+                try {
+                    participants = Arrays.stream(tokens).map(Long::valueOf).collect(Collectors.toList());
+                    if (participants.contains(session.getUser().getId())) {
+                        throw new Exception();
+                    }
+                } catch (Exception e) {
+                    System.out.println("Parameters Error.");
+                    return;
+                }
+
                 participants.add(session.getUser().getId());
+
                 message = new ChatCreateMessage(participants);
                 session.send(message);
                 break;
@@ -220,7 +262,14 @@ public class Main {
                     return;
                 }
 
-                message = new ChatHistMessage(Long.valueOf(tokens[0]));
+                try {
+                    chatId = Long.valueOf(tokens[0]);
+                } catch (NumberFormatException e) {
+                    System.out.println("Parameters Error.");
+                    return;
+                }
+
+                message = new ChatHistMessage(chatId);
                 session.send(message);
                 break;
             case "/text":
@@ -245,16 +294,21 @@ public class Main {
 
                 startPos = matcher.start();
 
-                String chatId = rawData.substring(0, startPos);
+                if (rawData.length() == startPos) {
+                    System.out.println("Parameters Error.");
+                    return;
+                }
 
-                if (rawData.equals(chatId)) {
+                try {
+                    chatId = Long.valueOf(rawData.substring(0, startPos));
+                } catch (NumberFormatException e) {
                     System.out.println("Parameters Error.");
                     return;
                 }
 
                 String text = rawData.substring(startPos + 1);
 
-                message = new TextMessage(Long.valueOf(chatId), text);
+                message = new TextMessage(chatId, text);
                 session.send(message);
                 break;
             case "/help":

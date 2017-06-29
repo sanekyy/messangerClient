@@ -18,7 +18,8 @@ public class StatusMessage extends Message {
     public static final int LOGIN_ERROR = 1;
     public static final int REGISTRATION_ERROR = 2;
     public static final int CHAT_CREATE_ERROR = 3;
-    public static final int TEXT_MESSAGE_ERROR = 4;
+    public static final int USER_NOT_EXIST_ERROR = 4;
+    public static final int TEXT_MESSAGE_ERROR = 5;
 
 
     private int statusCode;
