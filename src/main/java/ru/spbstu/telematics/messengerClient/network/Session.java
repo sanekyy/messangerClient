@@ -3,6 +3,8 @@ package ru.spbstu.telematics.messengerClient.network;
 
 import lombok.Getter;
 import lombok.Setter;
+import ru.spbstu.telematics.messengerClient.AppConfig;
+import ru.spbstu.telematics.messengerClient.data.DataManager;
 import ru.spbstu.telematics.messengerClient.data.storage.models.messages.Message;
 import ru.spbstu.telematics.messengerClient.exceptions.ProtocolException;
 import ru.spbstu.telematics.messengerClient.logic.CommandHandler;
@@ -31,38 +33,44 @@ public class Session {
     // сокет на клиента
     private Socket socket;
 
+    private IProtocol protocol = DataManager.getInstance().getProtocol();
+
     public Session(Socket socket) {
         this.socket = socket;
     }
 
-    public boolean isLoggedIn(){
+    public boolean isLoggedIn() {
         return user != null && !"".equals(user.getToken());
     }
 
-    public void send(Message message){
-        // TODO: 17.06.17 fix me
-
+    public void send(Message message) {
         if (isLoggedIn()) {
             message.setSenderId(user.getId());
             message.setToken(user.getToken());
         }
 
-        ByteBuffer buffer = null;
+        ByteBuffer buffer;
         try {
-            buffer = ByteBuffer.wrap(new StringProtocol().encode(message));
+            buffer = ByteBuffer.wrap(protocol.encode(message));
         } catch (ProtocolException e) {
-            e.printStackTrace();
+            if (AppConfig.DEBUG) {
+                e.printStackTrace();
+            }
+            return;
         }
 
         try {
             socket.getChannel().write(buffer);
         } catch (IOException e) {
-            e.printStackTrace();
+            if (AppConfig.DEBUG) {
+                e.printStackTrace();
+            }
+            System.out.println(e.getMessage());
         }
     }
 
     public void onMessage(Message message) {
-        switch (message.getType()){
+        switch (message.getType()) {
             case MSG_TEXT:
                 CommandHandler.text(this, message);
                 break;
@@ -86,6 +94,18 @@ public class Session {
     }
 
     public void close() {
-        // TODO: закрыть in/out каналы и сокет. Освободить другие ресурсы, если необходимо
+        if (socket != null) {
+            try {
+                socket.close();
+            } catch (IOException e) {
+                if (AppConfig.DEBUG) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
+
+    public boolean isConnected() {
+        return socket.isConnected();
     }
 }

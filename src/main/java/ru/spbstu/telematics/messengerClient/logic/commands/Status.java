@@ -5,9 +5,7 @@ import ru.spbstu.telematics.messengerClient.data.storage.models.messages.StatusM
 import ru.spbstu.telematics.messengerClient.exceptions.CommandException;
 import ru.spbstu.telematics.messengerClient.network.Session;
 
-/**
- * Created by ihb on 17.06.17.
- */
+
 public class Status implements ICommand {
     @Override
     public void execute(Session session, Message message) throws CommandException {
@@ -44,9 +42,17 @@ public class Status implements ICommand {
             case StatusMessage.USER_NOT_EXIST_ERROR:
                 System.out.println("User doesn't exist");
                 break;
-            case StatusMessage.TEXT_MESSAGE_ERROR:
-                // TODO: 21.06.17 make more state
-                System.out.println("TEXT MESSAGE ERROR");
+            case StatusMessage.SERVER_ERROR:
+                System.out.println("Server error");
+                break;
+            case StatusMessage.CHAT_NOT_EXIST:
+                System.out.println("Chat doesn't exist");
+                break;
+            case StatusMessage.MESSAGE_TOO_LONG:
+                System.out.println("Message too long");
+                break;
+            case StatusMessage.PERMISSION_DENIED:
+                System.out.println("Permission denied");
                 break;
 
             default:

@@ -1,14 +1,15 @@
 package ru.spbstu.telematics.messengerClient;
 
+import ru.spbstu.telematics.messengerClient.data.DataManager;
 import ru.spbstu.telematics.messengerClient.data.storage.models.messages.*;
 import ru.spbstu.telematics.messengerClient.exceptions.ProtocolException;
 import ru.spbstu.telematics.messengerClient.network.IProtocol;
 import ru.spbstu.telematics.messengerClient.network.Session;
-import ru.spbstu.telematics.messengerClient.network.StringProtocol;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
+import java.nio.channels.AsynchronousCloseException;
 import java.nio.channels.SocketChannel;
 import java.util.Arrays;
 import java.util.List;
@@ -17,17 +18,15 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-/**
- * Created by ihb on 17.06.17.
- */
+
 public class Main {
 
-    private static IProtocol protocol = new StringProtocol();
+    private static IProtocol protocol = DataManager.getInstance().getProtocol();
     private static Session session;
+    private static Thread socketListenerThread;
 
 
     public static void main(String[] args) throws Exception {
-
         try {
             initSocket();
 
@@ -47,9 +46,13 @@ public class Main {
                 }
             }
         } catch (Exception e) {
-            System.err.println("Application failed. " + e);
+            if (AppConfig.DEBUG) {
+                System.err.println("Application failed. " + e);
+            }
         } finally {
-            // TODO: 17.06.17  close();
+            if (session != null) {
+                session.close();
+            }
         }
     }
 
@@ -75,7 +78,7 @@ public class Main {
 
         session = new Session(socketChannel.socket());
 
-        Thread socketListenerThread = new Thread(() -> {
+        socketListenerThread = new Thread(() -> {
             ByteBuffer buffer = ByteBuffer.allocate(AppConfig.BUFFER_SIZE);
 
             while (!Thread.currentThread().isInterrupted()) {
@@ -86,8 +89,12 @@ public class Main {
                         session.onMessage(message);
                     } else if (read == -1) {
                         System.out.println("Connection lost, to try reconnect enter /reconnect");
+                        session = null;
                         return;
                     }
+                } catch (AsynchronousCloseException e) {
+                    Thread.currentThread().interrupt();
+                    System.out.println("Close connection");
                 } catch (Exception e) {
                     System.err.println("Failed to process connection: " + e);
                     e.printStackTrace();
@@ -100,10 +107,6 @@ public class Main {
 
         socketListenerThread.start();
     }
-
-    /**
-     * Реагируем на входящее сообщение
-     */
 
     /**
      * Обрабатывает входящую строку, полученную с консоли
@@ -126,6 +129,11 @@ public class Main {
 
         String command = rawData.substring(0,startPos);
 
+        if (session == null && !"/reconnect".equals(command)) {
+            System.out.println("Connection lost, try to reconnect ( /reconnect )");
+            return;
+        }
+
         switch (command) {
             case "/reconnect":
                 initSocket();
@@ -133,11 +141,13 @@ public class Main {
             case "/registration":
                 if (session.isLoggedIn()) {
                     System.out.println("You are logged in. Please logout to register.");
+                    Utils.printLogoutHelp();
                     return;
                 }
 
                 if ("/registration".equals(rawData)) {
                     System.out.println("Parameters Error.");
+                    Utils.printRegistrationHelp();
                     return;
                 }
 
@@ -145,6 +155,7 @@ public class Main {
                 tokens = rawData.split(" ");
                 if (tokens.length != 2) {
                     System.out.println("Parameters Error.");
+                    Utils.printRegistrationHelp();
                     return;
                 }
 
@@ -154,6 +165,13 @@ public class Main {
             case "/login":
                 if (session.isLoggedIn()) {
                     System.out.println("Already logged in.");
+                    Utils.printLogoutHelp();
+                    return;
+                }
+
+                if ("/login".equals(rawData)) {
+                    System.out.println("Parameters Error.");
+                    Utils.printLoginHelp();
                     return;
                 }
 
@@ -161,6 +179,7 @@ public class Main {
                 tokens = rawData.split(" ");
                 if(tokens.length != 2){
                     System.out.println("Parameters Error.");
+                    Utils.printLoginHelp();
                     return;
                 }
 
@@ -170,6 +189,7 @@ public class Main {
             case "/logout":
                 if (!session.isLoggedIn()) {
                     System.out.println("Already logouted.");
+                    Utils.printLoginHelp();
                     return;
                 }
                 session.logout();
@@ -178,6 +198,8 @@ public class Main {
             case "/info":
                 if (!session.isLoggedIn()) {
                     System.out.println("Error, you are not logged in. Please login or register.");
+                    Utils.printLoginHelp();
+                    Utils.printRegistrationHelp();
                     return;
                 }
 
@@ -186,6 +208,7 @@ public class Main {
                     tokens = rawData.split(" ");
                     if (tokens.length != 1) {
                         System.out.println("Parameters Error.");
+                        Utils.printInfoHelp();
                         return;
                     }
 
@@ -195,6 +218,7 @@ public class Main {
                         userId = Long.valueOf(tokens[0]);
                     } catch (NumberFormatException e) {
                         System.out.println("Parameters Error.");
+                        Utils.printInfoHelp();
                         return;
                     }
 
@@ -207,11 +231,14 @@ public class Main {
             case "/chat_list":
                 if (!session.isLoggedIn()) {
                     System.out.println("Error, you are not logged in. Please login or register.");
+                    Utils.printLoginHelp();
+                    Utils.printRegistrationHelp();
                     return;
                 }
 
                 if (rawData.length() > "/chat_list".length()) {
                     System.out.println("Parameters Error.");
+                    Utils.printChatListHelp();
                     return;
                 }
 
@@ -221,11 +248,14 @@ public class Main {
             case "/chat_create":
                 if (!session.isLoggedIn()) {
                     System.out.println("Error, you are not logged in. Please login or register.");
+                    Utils.printLoginHelp();
+                    Utils.printRegistrationHelp();
                     return;
                 }
 
                 if ("/chat_create".equals(rawData)) {
                     System.out.println("Parameters Error.");
+                    Utils.printChatCreateHelp();
                     return;
                 }
 
@@ -241,6 +271,7 @@ public class Main {
                     }
                 } catch (Exception e) {
                     System.out.println("Parameters Error.");
+                    Utils.printChatCreateHelp();
                     return;
                 }
 
@@ -252,11 +283,14 @@ public class Main {
             case "/chat_history":
                 if (!session.isLoggedIn()) {
                     System.out.println("Error, you are not logged in. Please login or register.");
+                    Utils.printLoginHelp();
+                    Utils.printRegistrationHelp();
                     return;
                 }
 
                 if ("/chat_history".equals(rawData)) {
                     System.out.println("Parameters Error.");
+                    Utils.printChatHistoryHelp();
                     return;
                 }
 
@@ -264,12 +298,14 @@ public class Main {
                 tokens = rawData.split(" ");
                 if (tokens.length != 1) {
                     System.out.println("Parameters Error.");
+                    Utils.printChatHistoryHelp();
                     return;
                 }
 
                 try {
                     chatId = Long.valueOf(tokens[0]);
                 } catch (NumberFormatException e) {
+                    Utils.printChatHistoryHelp();
                     System.out.println("Parameters Error.");
                     return;
                 }
@@ -280,11 +316,14 @@ public class Main {
             case "/text":
                 if (!session.isLoggedIn()) {
                     System.out.println("Error, you are not logged in. Please login or register.");
+                    Utils.printLoginHelp();
+                    Utils.printRegistrationHelp();
                     return;
                 }
 
                 if ("/text".equals(rawData)) {
                     System.out.println("Parameters Error.");
+                    Utils.printTextHelp();
                     return;
                 }
 
@@ -294,6 +333,7 @@ public class Main {
 
                 if (!matcher.find()) {
                     System.out.println("Parameters Error.");
+                    Utils.printTextHelp();
                     return;
                 }
 
@@ -301,6 +341,7 @@ public class Main {
 
                 if (rawData.length() == startPos) {
                     System.out.println("Parameters Error.");
+                    Utils.printTextHelp();
                     return;
                 }
 
@@ -308,6 +349,7 @@ public class Main {
                     chatId = Long.valueOf(rawData.substring(0, startPos));
                 } catch (NumberFormatException e) {
                     System.out.println("Parameters Error.");
+                    Utils.printTextHelp();
                     return;
                 }
 
